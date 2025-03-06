@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoundStream - YouTube Audio Downloader</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --primary-dark: #7c3aed;
+            --secondary: #06b6d4;
+            --accent: #f472b6;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --success: #10b981;
+            --error: #ef4444;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--dark);
+            color: var(--light);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            min-height: 100vh;
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1s ease, transform 1s ease;
+        }
+
+        .container.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Intro Animation */
+        .intro-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--dark), #2e1065);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 1;
+            transition: opacity 0.8s ease-out;
+        }
+
+        .intro-content {
+            text-align: center;
+            color: white;
+            position: relative;
+        }
+
+        .intro-logo {
+            font-size: 5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(90deg, var(--secondary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            opacity: 0;
+            transform: scale(0.8);
+            animation: zoomIn 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.5s;
+        }
+
+        .intro-logo svg {
+            display: inline-block;
+            margin-right: 15px;
+            vertical-align: middle;
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        .intro-tagline {
+            font-size: 1.8rem;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 1s ease forwards 1.2s;
+        }
+
+        .intro-waves {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: -1;
+        }
+
+        .wave {
+            position: absolute;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            animation: wave 3s infinite;
+        }
+
+        .wave:nth-child(1) {
+            width: 100px;
+            height: 100px;
+            animation-delay: 0s;
+            border-color: rgba(138, 92, 246, 0.3);
+        }
+
+        .wave:nth-child(2) {
+            width: 180px;
+            height: 180px;
+            animation-delay: 0.5s;
+            border-color: rgba(6, 182, 212, 0.3);
+        }
+
+        .wave:nth-child(3) {
+            width: 260px;
+            height: 260px;
+            animation-delay: 1s;
+            border-color: rgba(244, 114, 182, 0.3);
+        }
+
+        @keyframes wave {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 1;
+            }
+            70% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0;
+            }
+        }
+
+        @keyframes zoomIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes fadeInUp {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        /* Main Content */
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-top: 2rem;
+        }
+
+        .logo {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--secondary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: translateY(-5px);
+        }
+
+        .logo svg {
+            margin-right: 15px;
+            animation: floatIcon 3s infinite ease-in-out;
+        }
+
+        @keyframes floatIcon {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .tagline {
+            font-size: 1.3rem;
+            color: var(--gray);
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            padding: 3rem;
+            margin-bottom: 3rem;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+            border: 1px solid var(--glass-border);
+            position: relative;
+            overflow: hidden;
+            color: var(--dark);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--secondary), var(--accent));
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            font-size: 2.4rem;
+            margin-bottom: 2rem;
+            color: var(--dark);
+            text-align: center;
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--secondary), var(--accent));
+            border-radius: 3px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        input {
+            flex: 1;
+            padding: 1.2rem 1.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            outline: none;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.3);
+            background: white;
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 1.2rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(124, 58, 237, 0.3);
+            z-index: 1;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: all 0.5s;
+            z-index: -1;
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 25px rgba(124, 58, 237, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .result {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 16px;
+            background-color: rgba(241, 245, 249, 0.7);
+            text-align: center;
+            display: none;
+            font-size: 1.1rem;
+            animation: fadeIn 0.5s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .result.success {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            display: block;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .result.error {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            display: block;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            margin: 2rem 0;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .loading-text {
+            color: var(--dark);
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .loading-spinner::before, 
+        .loading-spinner::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            animation: pulse-ring 1.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        .loading-spinner::before {
+            width: 100%;
+            height: 100%;
+            background: rgba(139, 92, 246, 0.6);
+            animation-delay: 0.5s;
+        }
+
+        .loading-spinner::after {
+            width: 80%;
+            height: 80%;
+            background: rgba(139, 92, 246, 0.9);
+            animation-delay: 0.2s;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.2);
+                opacity: 0;
+            }
+        }
+
+        .instructions {
+            margin-top: 3rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            color: var(--dark);
+            border: 1px solid var(--glass-border);
+            transform: translateY(0);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .instructions:hover {
+            transform: translateY(-5px);
+        }
+
+        .instructions::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--secondary), var(--accent));
+        }
+
+        .instructions h3 {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: var(--dark);
+            position: relative;
+            display: inline-block;
+        }
+
+        .instructions h3::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--secondary), var(--accent));
+            border-radius: 3px;
+        }
+
+        .steps {
+            list-style: none;
+        }
+
+        .steps li {
+            margin-bottom: 2rem;
+            padding-left: 4rem;
+            position: relative;
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .steps li:hover {
+            transform: translateX(5px);
+        }
+
+        .steps li:last-child {
+            margin-bottom: 0;
+        }
+
+        .steps li::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 3rem;
+            height: 3rem;
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            box-shadow: 0 10px 20px rgba(6, 182, 212, 0.3);
+        }
+
+        .steps li:nth-child(1)::before {
+            content: "1";
+        }
+
+        .steps li:nth-child(2)::before {
+            content: "2";
+        }
+
+        .steps li:nth-child(3)::before {
+            content: "3";
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 4rem;
+            padding: 2rem 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--gray);
+            font-size: 1rem;
+            position: relative;
+        }
+
+        .footer p {
+            margin-bottom: 0.5rem;
+        }
+
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .popup-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .popup {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 3rem;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid var(--glass-border);
+            color: var(--dark);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .popup::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--secondary), var(--accent));
+        }
+
+        .popup-overlay.active .popup {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .popup-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--dark);
+            text-align: center;
+        }
+
+        .popup-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .popup-buttons button {
+            flex: 1;
+        }
+
+        #audioPlayer {
+            width: 100%;
+            margin-top: 1.5rem;
+            border-radius: 16px;
+            height: 60px;
+            background-color: rgba(241, 245, 249, 0.7);
+            outline: none;
+        }
+
+        .thank-you-popup {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 1.2rem 2.5rem;
+            border-radius: 100px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(124, 58, 237, 0.4);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .thank-you-popup.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Visualizer */
+        .audio-visualizer {
+            width: 100%;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 1.5rem;
+        }
+
+        .visualizer-bar {
+            width: 5px;
+            background: linear-gradient(to top, var(--secondary), var(--accent));
+            border-radius: 5px;
+            transition: height 0.2s ease;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 992px) {
+            .intro-logo {
+                font-size: 4rem;
+            }
+
+            .intro-tagline {
+                font-size: 1.6rem;
+            }
+
+            .logo {
+                font-size: 3rem;
+            }
+
+            .card, .instructions {
+                padding: 2.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+            }
+
+            .intro-logo {
+                font-size: 3.5rem;
+            }
+
+            .intro-tagline {
+                font-size: 1.4rem;
+            }
+
+            .card, .instructions {
+                padding: 2rem;
+            }
+
+            .popup {
+                width: 95%;
+                padding: 2rem;
+            }
+
+            .popup-title {
+                font-size: 1.6rem;
+            }
+
+            .logo {
+                font-size: 2.5rem;
+            }
+
+            .tagline {
+                font-size: 1.1rem;
+            }
+
+            h2 {
+                font-size: 2rem;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            input, button {
+                width: 100%;
+            }
+
+            button {
+                padding: 1rem 2rem;
+            }
+
+            .popup-buttons {
+                flex-direction: column;
+            }
+
+            .steps li {
+                font-size: 1.1rem;
+                padding-left: 3.5rem;
+            }
+
+            .steps li::before {
+                width: 2.5rem;
+                height: 2.5rem;
+                font-size: 1rem;
+            }
+
+            .instructions h3 {
+                font-size: 1.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .intro-logo {
+                font-size: 2.8rem;
+            }
+
+            .intro-tagline {
+                font-size: 1.2rem;
+            }
+
+            .card, .instructions, .popup {
+                padding: 1.5rem;
+                border-radius: 20px;
+            }
+
+            .logo {
+                font-size: 2.2rem;
+            }
+
+            h2 {
+                font-size: 1.8rem;
+            }
+
+            .steps li {
+                font-size: 1rem;
+                padding-left: 3rem;
+            }
+
+            .steps li::before {
+                width: 2.2rem;
+                height: 2.2rem;
+                font-size: 0.9rem;
+            }
+
+            .footer {
+                margin-top: 3rem;
+                padding: 1.5rem 0;
+            }
+
+            .loading-spinner {
+                width: 50px;
+                height: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Particles container -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Intro Animation -->
+    <div class="intro-animation" id="introAnimation">
+        <div class="intro-content">
+            <div class="intro-logo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 18V5l12-2v13"></path>
+                    <circle cx="6" cy="18" r="3"></circle>
+                    <circle cx="18" cy="16" r="3"></circle>
+                </svg>
+                SoundStream
+            </div>
+            <div class="intro-tagline">Your Premium YouTube Audio Companion</div>
+            <div class="intro-waves">
+                <div class="wave"></div>
+                <div class="wave"></div>
+                <div class="wave"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" id="mainContainer">
+        <div class="header">
+            <div class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 18V5l12-2v13"></path>
+                    <circle cx="6" cy="18" r="3"></circle>
+                    <circle cx="18" cy="16" r="3"></circle>
+                </svg>
+                SoundStream
+            </div>
+            <p class="tagline">Extract premium-quality audio from your favorite YouTube videos in seconds</p>
+        </div>
+
+        <div class="card">
+            <h2>YouTube Audio Downloader</h2>
+            <div class="input-group">
+                <input type="text" id="youtubeUrl" placeholder="Paste YouTube video URL here..." aria-label="YouTube URL">
+                <button onclick="processAudio()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Process Audio
+                </button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Processing your audio...</div>
+            </div>
+
+            <div class="result" id="result"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>How It Works</h3>
+            <ul class="steps">
+                <li>Copy the URL of any YouTube video you want to extract audio from</li>
+                <li>Paste the URL in the input field above and click "Process Audio"</li>
+                <li>Preview the audio and download your high-quality MP3 file</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            <p>Created by Mart &copy; 2025 SoundStream. All rights reserved.</p>
+            <p>For personal use only. Please respect copyright laws and YouTube's Terms of Service.</p>
+        </div>
+    </div>
+
+    <div class="popup-overlay" id="popupOverlay">
+        <div class="popup">
+            <div class="popup-title" id="popupTitle"></div>
+
+            <div class="audio-visualizer" id="audioVisualizer">
+                <!-- Bars will be created dynamically -->
+            </div>
+
+            <audio id="audioPlayer" controls></audio>
+
+            <div class="popup-buttons">
+                <button id="previewButton" onclick="toggleAudioPreview()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Preview Audio
+                </button>
+                <button onclick="downloadAudio()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download MP3
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="thank-you-popup" id="thankYouPopup">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0   stroke-linejoin="round">
+            <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+        </svg>
+        🎶 Thanks for using SoundStream 🎶
+    </div>
+
+    <script>
+        let currentAudioUrl = '';
+        let currentTitle = '';
+        let audioContext;
+        let analyser;
+        let audioSource;
+        let visualizerBars = [];
+        let isVisualizerActive = false;
+        let introSound;
+
+        // Create audio context for the intro sound
+        const createIntroSound = () => {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(440, ctx.currentTime); // A4 note
+            oscillator.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.5); // A5 note
+
+            gainNode.gain.setValueAtTime(0, ctx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.1);
+            gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 2);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(ctx.destination);
+
+            oscillator.start();
+            oscillator.stop(ctx.currentTime + 2);
+
+            // Second sound after a delay
+            setTimeout(() => {
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(659.25, ctx.currentTime); // E5 note
+                osc2.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.8); // Back to A4
+
+                gain2.gain.setValueAtTime(0, ctx.currentTime);
+                gain2.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.1);
+                gain2.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.5);
+
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+
+                osc2.start();
+                osc2.stop(ctx.currentTime + 1.5);
+            }, 600);
+
+            return ctx;
+        };
+
+        // Create audio context for audio visualization
+        const initAudioContext = () => {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+            }
+        };
+
+        // Create audio visualizer bars
+        const createVisualizer = () => {
+            const visualizer = document.getElementById('audioVisualizer');
+            visualizer.innerHTML = ''; // Clear any existing bars
+            visualizerBars = [];
+
+            // Create 30 bars for the visualizer
+            for (let i = 0; i < 30; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'visualizer-bar';
+                bar.style.height = '3px'; // Default height
+                visualizer.appendChild(bar);
+                visualizerBars.push(bar);
+            }
+        };
+
+        // Update visualizer with audio data
+        const updateVisualizer = () => {
+            if (!analyser || !isVisualizerActive) return;
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+
+            // Use a subset of the data for our 30 bars
+            const step = Math.floor(bufferLength / 30);
+
+            for (let i = 0; i < 30; i++) {
+                const dataIndex = i * step;
+                const value = dataArray[dataIndex];
+                const height = Math.max(3, value / 2); // Scale the height, min 3px
+                visualizerBars[i].style.height = `${height}px`;
+            }
+
+            if (isVisualizerActive) {
+                requestAnimationFrame(updateVisualizer);
+            }
+        };
+
+        // Particles animation
+        const createParticles = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const particlesContainer = document.getElementById('particles');
+
+            particlesContainer.appendChild(canvas);
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = [];
+            const particleCount = Math.min(100, window.innerWidth / 10);
+
+            // Create particles
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 3 + 1,
+                    speedX: Math.random() * 1 - 0.5,
+                    speedY: Math.random() * 1 - 0.5,
+                    color: `rgba(${Math.floor(Math.random() * 100 + 150)}, ${Math.floor(Math.random() * 100 + 150)}, ${Math.floor(Math.random() * 255)}, ${Math.random() * 0.5 + 0.3})`
+                });
+            }
+
+            // Animation function
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                particles.forEach(particle => {
+                    // Update position
+                    particle.x += particle.speedX;
+                    particle.y += particle.speedY;
+
+                    // Wrap around edges
+                    if (particle.x > canvas.width) particle.x = 0;
+                    if (particle.x < 0) particle.x = canvas.width;
+                    if (particle.y > canvas.height) particle.y = 0;
+                    if (particle.y < 0) particle.y = canvas.height;
+
+                    // Draw particle
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                    ctx.fillStyle = particle.color;
+                    ctx.fill();
+                });
+
+                // Draw connections between nearby particles
+                particles.forEach((particle, index) => {
+                    for (let i = index + 1; i < particles.length; i++) {
+                        const dx = particle.x - particles[i].x;
+                        const dy = particle.y - particles[i].y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance < 100) {
+                            ctx.beginPath();
+                            ctx.strokeStyle = `rgba(255, 255, 255, ${0.2 * (1 - distance / 100)})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.moveTo(particle.x, particle.y);
+                            ctx.lineTo(particles[i].x, particles[i].y);
+                            ctx.stroke();
+                        }
+                    }
+                });
+
+                requestAnimationFrame(animate);
+            }
+
+            // Start animation
+            animate();
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+        };
+
+        // Prevent text selection
+        document.addEventListener('selectstart', function(e) {
+            e.preventDefault();
+        });
+
+        // Prevent context menu
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+
+        // Intro animation
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            createVisualizer();
+
+            // Play intro sound after a short delay
+            setTimeout(() => {
+                introSound = createIntroSound();
+            }, 500);
+
+            setTimeout(() => {
+                document.getElementById('introAnimation').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('introAnimation').style.display = 'none';
+                    document.getElementById('mainContainer').classList.add('visible');
+                }, 500);
+            }, 5000);
+        });
+
+        async function processAudio() {
+            const url = document.getElementById("youtubeUrl").value;
+            const loading = document.getElementById("loading");
+            const result = document.getElementById("result");
+
+            if (!url) {
+                result.innerText = "Please enter a valid YouTube URL";
+                result.className = "result error";
+                return;
+            }
+
+            // Show loading spinner
+            loading.style.display = "flex";
+            result.style.display = "none";
+
+            try {
+                const response = await fetch(`/download-audio?url=${encodeURIComponent(url)}`);
+                const data = await response.json();
+
+                // Hide loading spinner
+                loading.style.display = "none";
+
+                if (data.downloadPath) {
+                    currentAudioUrl = data.downloadPath;
+                    currentTitle = data.title;
+                    showPopup(data.title);
+                } else {
+                    result.innerText = data.error || "Unable to process this video. Please try another URL.";
+                    result.className = "result error";
+                }
+            } catch (error) {
+                console.error(error);
+                loading.style.display = "none";
+                result.innerText = "Error processing your request. Please try again later.";
+                result.className = "result error";
+            }
+
+            // Clear the input field
+            document.getElementById("youtubeUrl").value = "";
+        }
+
+        function showPopup(title) {
+            document.getElementById('popupTitle').textContent = title;
+            document.getElementById('popupOverlay').classList.add('active');
+            document.getElementById('audioPlayer').style.display = 'block';
+            document.getElementById('previewButton').innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Preview Audio
+            `;
+        }
+
+        function toggleAudioPreview() {
+            initAudioContext();
+            const audioPlayer = document.getElementById('audioPlayer');
+            const previewButton = document.getElementById('previewButton');
+
+            if (audioPlayer.paused) {
+                if (!audioPlayer.src || audioPlayer.src !== currentAudioUrl) {
+                    audioPlayer.src = currentAudioUrl;
+
+                    // Connect to audio context for visualization
+                    if (!audioSource) {
+                        audioSource = audioContext.createMediaElementSource(audioPlayer);
+                        audioSource.connect(analyser);
+                        analyser.connect(audioContext.destination);
+                    }
+                }
+
+                audioPlayer.play();
+                isVisualizerActive = true;
+                updateVisualizer();
+
+                previewButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="4" width="4" height="16"></rect>
+                        <rect x="14" y="4" width="4" height="16"></rect>
+                    </svg>
+                    Pause Audio
+                `;
+            } else {
+                audioPlayer.pause();
+                isVisualizerActive = false;
+
+                previewButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Preview Audio
+                `;
+            }
+        }
+
+        function downloadAudio() {
+            if (currentAudioUrl) {
+                window.location.href = currentAudioUrl;
+                closePopup();
+                showThankYouPopup();
+            }
+        }
+
+        function closePopup() {
+            const popupOverlay = document.getElementById('popupOverlay');
+            const audioPlayer = document.getElementById('audioPlayer');
+
+            popupOverlay.classList.remove('active');
+            audioPlayer.pause();
+            audioPlayer.currentTime = 0;
+            isVisualizerActive = false;
+        }
+
+        function showThankYouPopup() {
+            const thankYouPopup = document.getElementById('thankYouPopup');
+            thankYouPopup.classList.add('show');
+            setTimeout(() => {
+                thankYouPopup.classList.remove('show');
+            }, 3000);
+        }
+
+        // Close popup when clicking outside
+        document.getElementById('popupOverlay').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closePopup();
+            }
+        });
+    </script>
+</body>
+</html>
